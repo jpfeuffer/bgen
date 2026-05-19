@@ -39,7 +39,7 @@ namespace genfile {
 		}
 
 		void View::set_query( IndexQuery::UniquePtr query ) {
-			m_index_query = query ;
+			m_index_query = std::move( query ) ;
 			if( m_index_query->number_of_variants() > 0 ) {
 				m_stream->seekg( m_index_query->locate_variant(0).first ) ;
 			}
@@ -177,7 +177,7 @@ namespace genfile {
 
 			// get file size
 			{
-				std::ios::streampos origin = m_stream->tellg() ;
+				std::streampos origin = m_stream->tellg() ;
 				m_stream->seekg( 0, std::ios::end ) ;
 				m_file_metadata.size = m_stream->tellg() - origin ;
 				m_stream->seekg( 0, std::ios::beg ) ;

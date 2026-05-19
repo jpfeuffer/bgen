@@ -27,7 +27,7 @@ namespace appcontext {
 		void remove_progress_context_impl( std::string const& name ) ;
 	private:
 		mutable std::map< std::string, ProgressContextImpl* > m_progress_contexts ;
-		std::auto_ptr< OstreamTee > m_logger ;
+		std::unique_ptr< OstreamTee > m_logger ;
 	} ;
 
 

@@ -12,7 +12,7 @@
 #include <vector>
 #include <exception>
 #include <stdint.h>
-#include "sqlite3/sqlite3.h"
+#include <sqlite3.h>
 #include "db/SQLite3Connection.hpp"
 
 namespace db {
@@ -27,7 +27,7 @@ namespace db {
 	class SQLStatement
 	{
 	public:
-		typedef std::auto_ptr< SQLStatement > UniquePtr ;
+		typedef std::unique_ptr< SQLStatement > UniquePtr ;
 	public:
 		virtual ~SQLStatement() ;
 		

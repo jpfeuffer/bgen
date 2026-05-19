@@ -382,7 +382,9 @@ namespace genfile {
 			IntegerType& length = *length_ptr ;
 			read_little_endian_integer( in_stream, length_ptr ) ;
 			std::vector< char >buffer ( length ) ;
-			in_stream.read( &buffer[0], length ) ;
+			if( length > 0 ) {
+				in_stream.read( &buffer[0], length ) ;
+			}
 			if( !in_stream ) {
 				throw BGenError() ;
 			}

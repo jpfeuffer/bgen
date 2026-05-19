@@ -1,0 +1,89 @@
+#!/bin/sh
+set -e
+
+# configure — generates src/Makevars from src/Makevars.in
+# Run by R CMD INSTALL from the R/package/ directory.
+#
+# Finds the bgen repo root (two levels up: R/package/ -> R/ -> repo root),
+# then detects system libraries (boost, zlib, zstd, sqlite3) via pkg-config
+# or well-known prefix locations.
+
+BGEN_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+echo "configure: bgen root: ${BGEN_ROOT}"
+
+# ── pkg-config helpers ──────────────────────────────────────────────────────
+pkg_cflags() {
+    if pkg-config --exists "$1" 2>/dev/null; then
+        pkg-config --cflags "$1"
+    else
+        echo "$2"
+    fi
+}
+
+pkg_libs() {
+    if pkg-config --exists "$1" 2>/dev/null; then
+        pkg-config --libs "$1"
+    else
+        echo "$2"
+    fi
+}
+
+# ── zlib ────────────────────────────────────────────────────────────────────
+ZLIB_CFLAGS=$(pkg_cflags zlib "")
+ZLIB_LIBS=$(pkg_libs   zlib "-lz")
+
+# ── zstd ────────────────────────────────────────────────────────────────────
+ZSTD_CFLAGS=$(pkg_cflags libzstd "")
+ZSTD_LIBS=$(pkg_libs   libzstd "-lzstd")
+
+# ── SQLite3 ─────────────────────────────────────────────────────────────────
+SQLITE_CFLAGS=$(pkg_cflags sqlite3 "")
+SQLITE_LIBS=$(pkg_libs   sqlite3 "-lsqlite3")
+
+# ── Boost (headers + compiled libs: filesystem, system, thread, date_time) ──
+BOOST_CFLAGS=""
+BOOST_LIBS=""
+
+for prefix in \
+    "${CONDA_PREFIX}" \
+    "${PREFIX}" \
+    "/opt/homebrew" \
+    "/usr/local" \
+    "/usr"
+do
+    if [ -n "${prefix}" ] && [ -d "${prefix}/include/boost" ]; then
+        BOOST_CFLAGS="-I${prefix}/include"
+        BOOST_LIBS="-L${prefix}/lib -lboost_filesystem -lboost_system -lboost_thread -lboost_date_time"
+        echo "configure: found Boost at ${prefix}"
+        break
+    fi
+done
+
+if [ -z "${BOOST_CFLAGS}" ]; then
+    echo "configure: WARNING: Boost headers not found; falling back to default search paths."
+    BOOST_LIBS="-lboost_filesystem -lboost_system -lboost_thread -lboost_date_time"
+fi
+
+# ── Compose flags ────────────────────────────────────────────────────────────
+PKG_CPPFLAGS="\
+-I${BGEN_ROOT}/genfile/include \
+-I${BGEN_ROOT}/db/include \
+${BOOST_CFLAGS} \
+${ZLIB_CFLAGS} \
+${ZSTD_CFLAGS} \
+${SQLITE_CFLAGS} \
+-DSQLITE_ENABLE_COLUMN_METADATA \
+-DSQLITE_USE_URI=1"
+
+PKG_LIBS="${BOOST_LIBS} ${ZLIB_LIBS} ${ZSTD_LIBS} ${SQLITE_LIBS}"
+
+BGEN_VPATH="${BGEN_ROOT}/src:${BGEN_ROOT}/db/src"
+
+# ── Write src/Makevars ───────────────────────────────────────────────────────
+sed \
+    -e "s|@PKG_CPPFLAGS@|${PKG_CPPFLAGS}|g" \
+    -e "s|@PKG_LIBS@|${PKG_LIBS}|g" \
+    -e "s|@BGEN_VPATH@|${BGEN_VPATH}|g" \
+    src/Makevars.in > src/Makevars
+
+echo "configure: src/Makevars written successfully"

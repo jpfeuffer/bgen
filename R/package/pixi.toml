@@ -1,0 +1,20 @@
+[workspace]
+name = "rbgen"
+channels = ["https://prefix.dev/conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64"]
+
+[dependencies]
+r-base = ">=4.3"
+r-rcpp = ">=0.12.4"
+pkg-config = "*"
+boost-cpp = ">=1.84"
+zlib = "*"
+zstd = "*"
+sqlite = "*"
+
+[tasks]
+# Install the R package into the pixi R library
+install = "R CMD INSTALL ."
+# Install then run the full test suite (test.sh must run from the repo root
+# so that relative paths like "example/..." resolve correctly)
+test = { cmd = "bash R/package/test.sh", cwd = "../.." }

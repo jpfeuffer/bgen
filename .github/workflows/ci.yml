@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  build-cmake:
+    name: CMake (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libboost-all-dev \
+            libsqlite3-dev \
+            zlib1g-dev \
+            libzstd-dev \
+            ninja-build
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install boost sqlite zstd ninja
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBGEN_BUILD_TESTS=ON
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Install
+        run: cmake --install build --prefix build/install
+
+      - name: Verify CMake package config files installed
+        run: |
+          test -f build/install/lib/cmake/bgen/bgenConfig.cmake
+          test -f build/install/lib/cmake/bgen/bgenConfigVersion.cmake
+          test -f build/install/lib/cmake/bgen/bgenTargets.cmake
+          echo "CMake package config files present"
+
+  build-pixi:
+    name: Pixi package (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@v0.8.3
+
+      - name: Run tests via pixi tasks
+        run: pixi run test
+
+      - name: Build conda package
+        run: pixi build
+
+      - name: Test R package
+        working-directory: R/package
+        run: pixi run test

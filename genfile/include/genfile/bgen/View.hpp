@@ -27,7 +27,7 @@ namespace genfile {
 	namespace bgen {
 		struct View {
 		public:
-			typedef std::auto_ptr< View > UniquePtr ;
+			typedef std::unique_ptr< View > UniquePtr ;
 			typedef genfile::bgen::IndexQuery IndexQuery ;
 			typedef genfile::bgen::IndexQuery::FileMetadata FileMetadata ;
 
@@ -121,7 +121,7 @@ namespace genfile {
 
 		private:
 			std::string const m_filename ;
-			std::auto_ptr< std::istream > m_stream ;
+			std::unique_ptr< std::istream > m_stream ;
 			std::size_t m_variant_i ;
 			IndexQuery::UniquePtr m_index_query ;
 

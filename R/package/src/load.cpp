@@ -180,7 +180,7 @@ namespace {
 		{
 			assert( result != 0 ) ;
 			assert( sample_indices != 0 ) ;
-			assert( sample_indices.size() == 0 ) ;
+			assert( sample_indices->size() == 0 ) ;
 			assert( result->size() == requested_samples.size() ) ;
 		}
 		
@@ -224,7 +224,7 @@ namespace {
 			}
 			query->include_rsids( rsids ) ;
 			query->initialise() ;
-			view->set_query( query ) ;
+			view->set_query( std::move( query ) ) ;
 		}
 		return view ;
 	}

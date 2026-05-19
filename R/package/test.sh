@@ -1,9 +1,9 @@
 #!/bin/bash
-R="$1"
-if [[ ${R} == '' ]]; then
-  R='R'
-fi
-${R} CMD INSTALL build/R/rbgen
+# Usage: bash R/package/test.sh [/path/to/R]
+# Must be run from the repository root.
+R="${1:-R}"
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+${R} CMD INSTALL "${REPO_ROOT}/R/package"
 ${R} --vanilla << HERE_DOC
 library( rbgen )
 
