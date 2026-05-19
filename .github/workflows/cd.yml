@@ -18,18 +18,21 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up pixi
-        uses: prefix-dev/setup-pixi@v0.8.1
-        with:
-          pixi-version: v0.44.0
+        uses: prefix-dev/setup-pixi@v0.8.3
 
       - name: Build conda package
-        run: pixi build --output-dir dist/
+        run: |
+          mkdir -p dist
+          pixi build
+          # Copy built package to dist/ for upload
+          find .pixi/build -name '*.conda' -o -name '*.tar.bz2' | xargs -I{} cp {} dist/ 2>/dev/null || true
 
       - name: Upload conda package artifact
         uses: actions/upload-artifact@v4
         with:
           name: conda-package-${{ matrix.os }}
           path: dist/
+          if-no-files-found: warn
           retention-days: 30
 
   build-release-binaries:
@@ -38,7 +41,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-13, macos-14]
         include:
           - os: ubuntu-latest
             artifact: bgen-linux-x86_64
@@ -63,8 +65,7 @@ jobs:
 
       - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
-        run: |
-          brew install boost sqlite zstd ninja
+        run: brew install boost sqlite zstd ninja
 
       - name: Configure
         run: |
@@ -109,3 +110,5 @@ jobs:
             artifacts/bgen-linux-x86_64/*.tar.gz
             artifacts/bgen-macos-x86_64/*.tar.gz
             artifacts/bgen-macos-arm64/*.tar.gz
+            artifacts/conda-package-*/*.conda
+            artifacts/conda-package-*/*.tar.bz2
