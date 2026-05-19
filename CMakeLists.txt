@@ -17,8 +17,16 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 find_package(ZLIB REQUIRED)
 find_package(zstd REQUIRED)
 find_package(SQLite3 REQUIRED)
+# CMake ≥ 4.0 renamed SQLite3::SQLite3 → SQLite::SQLite3; create alias for older CMake
+if(TARGET SQLite3::SQLite3 AND NOT TARGET SQLite::SQLite3)
+    add_library(SQLite::SQLite3 ALIAS SQLite3::SQLite3)
+elseif(TARGET SQLite::SQLite3 AND NOT TARGET SQLite3::SQLite3)
+    add_library(SQLite3::SQLite3 ALIAS SQLite::SQLite3)
+endif()
+
+# Use Boost's own CMake config (CMP0167 NEW — required for CMake ≥ 3.30)
+cmake_policy(SET CMP0167 NEW)
 find_package(Boost REQUIRED COMPONENTS
-    system
     filesystem
     thread
     date_time
@@ -62,7 +70,6 @@ target_link_libraries(bgen
         $<TARGET_NAME_IF_EXISTS:zstd::libzstd_static>
         SQLite3::SQLite3
         Boost::filesystem
-        Boost::system
     PRIVATE
         bgen::db
 )
