@@ -1,0 +1,24 @@
+add_library(bgen_appcontext STATIC
+    src/ApplicationContext.cpp
+    src/CmdLineOptionProcessor.cpp
+    src/CmdLineUIContext.cpp
+    src/OptionDefinition.cpp
+    src/OptionProcessor.cpp
+    src/OstreamTee.cpp
+    src/Timer.cpp
+    src/UIContext.cpp
+    src/get_current_time_as_string.cpp
+    src/progress_bar.cpp
+    src/string_utils.cpp
+)
+target_include_directories(bgen_appcontext
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(bgen_appcontext
+    PUBLIC
+        Boost::filesystem
+        Boost::timer
+        Boost::thread
+)

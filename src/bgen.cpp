@@ -91,7 +91,9 @@ namespace genfile {
 			read_little_endian_integer( aStream, &number_of_samples ) ;
 			aStream.read( &magic[0], 4 ) ;
 			free_data.resize( header_size - fixed_data_size ) ;
-			aStream.read( &free_data[0], free_data.size() ) ;
+			if( !free_data.empty() ) {
+				aStream.read( &free_data[0], free_data.size() ) ;
+			}
 			read_little_endian_integer( aStream, &flags ) ;
 
 			if(

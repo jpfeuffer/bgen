@@ -101,7 +101,7 @@ namespace appcontext {
 		}
 	
 		if( total_count ) {	
-			double progress = (total_count == 0) ? 1.0 : (static_cast< double >( count ) / *total_count ) ;
+			double progress = (*total_count == 0) ? 1.0 : (static_cast< double >( count ) / *total_count ) ;
 			
 			if( count == *total_count ) {
 				m_ui_context.logger()

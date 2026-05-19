@@ -1,0 +1,55 @@
+# Build directories
+build/
+dist/
+.waf-1.8.13*
+.waf-2.0.6*
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+build.ninja
+Testing/
+
+# Compiled binaries and libraries
+*.o
+*.a
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.out
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.Python
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.clang_complete
+
+# Pixi/Conda
+.pixi/
+pixi-lock.yaml
+
+# Local environment files
+.env
+.env.local
+*.lock
+
+# Temporary files
+*.tmp
+*.bak
+*.orig
