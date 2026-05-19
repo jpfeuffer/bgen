@@ -1,0 +1,15 @@
+PKG_CPPFLAGS = @PKG_CPPFLAGS@
+PKG_LIBS = @PKG_LIBS@
+
+# bgen library source objects (compiled from the repo source tree via vpath)
+BGEN_OBJECTS = bgen.o IndexQuery.o MissingValue.o View.o zlib.o
+DB_OBJECTS   = Connection.o Error.o SQLStatement.o SQLite3Connection.o SQLite3Statement.o
+
+OBJECTS = RcppExports.o load.o $(BGEN_OBJECTS) $(DB_OBJECTS)
+
+# Tell make where to find the .cpp files that correspond to BGEN_OBJECTS / DB_OBJECTS
+vpath %.cpp @BGEN_VPATH@
+
+.PHONY: all
+all: $(SHLIB)
+$(SHLIB): $(OBJECTS)
