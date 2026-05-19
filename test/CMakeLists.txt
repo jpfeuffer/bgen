@@ -12,9 +12,9 @@ target_include_directories(test_bgen PRIVATE
     ${CMAKE_BINARY_DIR}
 )
 target_link_libraries(test_bgen PRIVATE
-    bgen
-    bgen_db
-    bgen_appcontext
+    bgen::bgen
+    bgen::db
+    bgen::appcontext
     Boost::filesystem
 )
 

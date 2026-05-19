@@ -11,11 +11,14 @@ add_library(bgen_appcontext STATIC
     src/progress_bar.cpp
     src/string_utils.cpp
 )
+add_library(bgen::appcontext ALIAS bgen_appcontext)
+
 target_include_directories(bgen_appcontext
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
+target_compile_features(bgen_appcontext PUBLIC cxx_std_17)
 target_link_libraries(bgen_appcontext
     PUBLIC
         Boost::filesystem

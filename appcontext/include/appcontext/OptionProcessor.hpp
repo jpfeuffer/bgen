@@ -93,7 +93,7 @@ namespace appcontext {
 
 	class OptionProcessor {
 		public:
-			typedef std::auto_ptr< OptionProcessor > UniquePtr ;
+			typedef std::unique_ptr< OptionProcessor > UniquePtr ;
 			typedef std::map< std::string, OptionDefinition > OptionDefinitions ;
 			typedef std::map< std::string, std::vector< std::string > > OptionValues ; 
 			typedef std::map< std::string, std::pair< std::vector< std::string >, std::string > > OptionValueMap ;

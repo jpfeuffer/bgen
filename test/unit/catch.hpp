@@ -5712,6 +5712,7 @@ namespace Catch {
 #include <sstream>
 #include <iostream>
 #include <algorithm>
+#include <random>
 
 namespace Catch {
 
@@ -5784,8 +5785,7 @@ namespace Catch {
                     break;
                 case RunTests::InRandomOrder:
                 {
-                    RandomNumberGenerator rng;
-                    std::random_shuffle( matchingTestCases.begin(), matchingTestCases.end(), rng );
+                    std::shuffle( matchingTestCases.begin(), matchingTestCases.end(), std::default_random_engine( std::rand() ) );
                 }
                     break;
                 case RunTests::InDeclarationOrder:

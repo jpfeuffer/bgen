@@ -66,7 +66,7 @@ public:
 		appcontext::ApplicationContext(
 			globals::program_name,
 			globals::program_version,
-			std::auto_ptr< appcontext::OptionProcessor >( new EditBgenOptionProcessor ),
+			std::unique_ptr< appcontext::OptionProcessor >( new EditBgenOptionProcessor ),
 			argc,
 			argv,
 			"-log"
@@ -87,7 +87,7 @@ public:
 	
 	void unsafe_process() {
 		std::vector< std::string > filenames = options().get_values< std::string >( "-g" ) ;
-		std::auto_ptr< boost::ptr_vector< std::fstream > > streams  = open_bgen_files( filenames ) ;
+		std::unique_ptr< boost::ptr_vector< std::fstream > > streams  = open_bgen_files( filenames ) ;
 
 		bool somethingDone = false ;
 		if( options().check( "-set-free-data" )) {
@@ -106,19 +106,17 @@ public:
 		}
 	}
 	
-	std::auto_ptr< boost::ptr_vector< std::fstream > > open_bgen_files( std::vector< std::string > const& filenames ) const {
-		boost::ptr_vector< std::fstream > streams ;
+	std::unique_ptr< boost::ptr_vector< std::fstream > > open_bgen_files( std::vector< std::string > const& filenames ) const {
+		auto streams = std::make_unique< boost::ptr_vector< std::fstream > >() ;
 		for( std::size_t i = 0; i < filenames.size(); ++i ) {
-			streams.push_back(
-				std::auto_ptr< std::fstream >(
-					new std::fstream(
-						filenames[i].c_str(),
-						std::ios::in | std::ios::out | std::ios::binary
-					)
+			streams->push_back(
+				new std::fstream(
+					filenames[i].c_str(),
+					std::ios::in | std::ios::out | std::ios::binary
 				)
 			) ;
 		}
-		return streams.release() ;
+		return streams ;
 	}
 	
 	void edit_free_data(

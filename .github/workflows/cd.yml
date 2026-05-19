@@ -1,0 +1,111 @@
+name: CD
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-conda-package:
+    name: Conda package (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-13, macos-14]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.44.0
+
+      - name: Build conda package
+        run: pixi build --output-dir dist/
+
+      - name: Upload conda package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: conda-package-${{ matrix.os }}
+          path: dist/
+          retention-days: 30
+
+  build-release-binaries:
+    name: Release binaries (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-13, macos-14]
+        include:
+          - os: ubuntu-latest
+            artifact: bgen-linux-x86_64
+          - os: macos-13
+            artifact: bgen-macos-x86_64
+          - os: macos-14
+            artifact: bgen-macos-arm64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libboost-all-dev \
+            libsqlite3-dev \
+            zlib1g-dev \
+            libzstd-dev \
+            ninja-build
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install boost sqlite zstd ninja
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBGEN_BUILD_TESTS=OFF
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Package binaries
+        run: |
+          cmake --install build --prefix staging
+          tar -czf ${{ matrix.artifact }}.tar.gz -C staging .
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}.tar.gz
+
+  create-release:
+    name: Create GitHub Release
+    needs: [build-conda-package, build-release-binaries]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/bgen-linux-x86_64/*.tar.gz
+            artifacts/bgen-macos-x86_64/*.tar.gz
+            artifacts/bgen-macos-arm64/*.tar.gz
