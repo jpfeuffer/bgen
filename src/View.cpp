@@ -16,6 +16,9 @@
 #include "genfile/bgen/bgen.hpp"
 #include "genfile/bgen/IndexQuery.hpp"
 #include "genfile/bgen/View.hpp"
+#if BGEN_WITH_S3
+#include "genfile/bgen/S3StreamBuf.hpp"
+#endif
 
 namespace genfile {
 	namespace bgen {
@@ -165,18 +168,34 @@ namespace genfile {
 		// Open the bgen file, read header data and gather metadata.
 		void View::setup( std::string const& filename ) {
 			m_file_metadata.filename = filename ;
-			m_file_metadata.last_write_time = boost::filesystem::last_write_time( filename ) ;
 
-			// Open the stream
-			m_stream.reset(
-				new std::ifstream( filename.c_str(), std::ifstream::binary )
-			) ;
-			if( !*m_stream ) {
-				throw std::invalid_argument( filename ) ;
-			}
-
-			// get file size
+#if BGEN_WITH_S3
+			if( genfile::bgen::is_s3_uri( filename ) ) {
+				// S3 path: use S3 streaming
+				m_stream = genfile::bgen::make_s3_istream( filename ) ;
+				if( !*m_stream ) {
+					throw std::invalid_argument( filename ) ;
+				}
+				// Get file size via seek
+				m_stream->seekg( 0, std::ios::end ) ;
+				m_file_metadata.size = m_stream->tellg() ;
+				m_stream->seekg( 0, std::ios::beg ) ;
+				m_file_metadata.last_write_time = 0 ; // not available for S3
+			} else
+#endif
 			{
+				// Local file path
+				m_file_metadata.last_write_time = boost::filesystem::last_write_time( filename ) ;
+
+				// Open the stream
+				m_stream.reset(
+					new std::ifstream( filename.c_str(), std::ifstream::binary )
+				) ;
+				if( !*m_stream ) {
+					throw std::invalid_argument( filename ) ;
+				}
+
+				// get file size
 				std::streampos origin = m_stream->tellg() ;
 				m_stream->seekg( 0, std::ios::end ) ;
 				m_file_metadata.size = m_stream->tellg() - origin ;

@@ -17,6 +17,16 @@ configure = "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PRE
 build     = { cmd = "cmake --build build --parallel", depends-on = ["configure"] }
 test      = { cmd = "ctest --test-dir build --output-on-failure -V", depends-on = ["build"] }
 
+[feature.s3.dependencies]
+aws-sdk-cpp = "*"
+
+[feature.s3.tasks]
+configure = "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DBGEN_BUILD_TESTS=ON -DBGEN_WITH_S3=ON"
+
+[environments]
+default = { solve-group = "default" }
+s3 = { features = ["s3"], solve-group = "default" }
+
 [package]
 name = "bgen"
 version = "1.1.7"
