@@ -5,6 +5,7 @@ project(bgen VERSION 1.1.7 LANGUAGES C CXX)
 option(BGEN_BUILD_EXAMPLES "Build example programs" OFF)
 option(BGEN_BUILD_TESTS "Build tests" ON)
 option(BGEN_BUILD_TOOLS "Build command-line tools (bgenix, cat-bgen, edit-bgen)" ON)
+option(BGEN_WITH_S3 "Enable AWS S3 remote file support" OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 
 # ─── Language standards ──────────────────────────────────────────────────────
@@ -34,6 +35,11 @@ find_package(Boost REQUIRED COMPONENTS
     chrono
 )
 
+# ─── Optional: AWS S3 support ────────────────────────────────────────────────
+if(BGEN_WITH_S3)
+    find_package(AWSSDK REQUIRED COMPONENTS s3)
+endif()
+
 # ─── Generated version header ───────────────────────────────────────────────
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/bgen_revision.hpp.in"
@@ -46,13 +52,18 @@ add_subdirectory(db)
 add_subdirectory(appcontext)
 
 # ─── Core bgen library ───────────────────────────────────────────────────────
-add_library(bgen
+set(BGEN_SOURCES
     src/bgen.cpp
     src/IndexQuery.cpp
     src/MissingValue.cpp
     src/View.cpp
     src/zlib.cpp
 )
+if(BGEN_WITH_S3)
+    list(APPEND BGEN_SOURCES src/S3StreamBuf.cpp)
+endif()
+
+add_library(bgen ${BGEN_SOURCES})
 add_library(bgen::bgen ALIAS bgen)
 
 target_include_directories(bgen
@@ -63,6 +74,9 @@ target_include_directories(bgen
         ${CMAKE_CURRENT_BINARY_DIR}
 )
 target_compile_features(bgen PUBLIC cxx_std_17)
+if(BGEN_WITH_S3)
+    target_compile_definitions(bgen PUBLIC BGEN_WITH_S3=1)
+endif()
 target_link_libraries(bgen
     PUBLIC
         ZLIB::ZLIB
@@ -72,6 +86,7 @@ target_link_libraries(bgen
         Boost::filesystem
     PRIVATE
         bgen::db
+        $<$<BOOL:${BGEN_WITH_S3}>:${AWSSDK_LINK_LIBRARIES}>
 )
 
 # ─── Command-line tools ──────────────────────────────────────────────────────

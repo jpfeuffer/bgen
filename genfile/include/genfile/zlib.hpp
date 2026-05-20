@@ -77,7 +77,7 @@ namespace genfile {
 	void zstd_uncompress( byte_t const* begin, byte_t const* const end, std::vector< T >* dest ) {
 		std::size_t const source_size = ( end - begin ) ;
 		std::size_t const dest_size = dest->size() * sizeof( T ) ;
-	    std::size_t const uncompressed_size = ZSTD_getDecompressedSize( reinterpret_cast< void const* >( begin ), source_size ) ;
+	    std::size_t const uncompressed_size = ZSTD_getFrameContentSize( reinterpret_cast< void const* >( begin ), source_size ) ;
 		std::size_t const result = ZSTD_decompress(
 			reinterpret_cast< void* >( &dest->operator[]( 0 ) ),
 			dest_size,
