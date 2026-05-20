@@ -78,3 +78,66 @@ jobs:
       - name: Test R package
         working-directory: R/package
         run: pixi run test
+
+  # ─── S3 integration tests (LocalStack) ──────────────────────────────────
+  # Uses LocalStack Community to emulate S3 — no real AWS account required.
+  # Runs on every push/PR automatically.
+  test-s3:
+    name: S3 integration tests (LocalStack)
+    runs-on: ubuntu-latest
+
+    services:
+      localstack:
+        image: localstack/localstack:latest
+        ports:
+          - "4566:4566"
+        env:
+          SERVICES: s3
+          DEFAULT_REGION: us-east-1
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+        options: >-
+          --health-cmd "curl -f http://localhost:4566/_localstack/health"
+          --health-interval 5s
+          --health-timeout 10s
+          --health-retries 20
+          --health-start-period 10s
+
+    env:
+      # Point the AWS SDK (and awscli) at LocalStack
+      AWS_ENDPOINT_URL: http://localhost:4566
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      # example.16bits.bgen has 199 variants, 500 samples
+      BGEN_S3_EXPECTED_VARIANTS: "199"
+      BGEN_S3_EXPECTED_SAMPLES: "500"
+      BGEN_S3_TEST_BUCKET: bgen-test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@v0.8.3
+
+      # Create bucket and upload the example BGEN file.
+      # A second upload with a public-read ACL exercises anonymous access (Test 2).
+      - name: Create bucket and upload example BGEN files
+        run: |
+          # awscli is pre-installed on ubuntu-latest runners
+          aws s3 mb "s3://${BGEN_S3_TEST_BUCKET}" --region us-east-1
+
+          KEY="ci-test/example.16bits.bgen"
+          aws s3 cp example/example.16bits.bgen "s3://${BGEN_S3_TEST_BUCKET}/${KEY}"
+
+          # Public-access copy (anonymous read test)
+          PUBLIC_KEY="ci-test-public/example.16bits.bgen"
+          aws s3 cp example/example.16bits.bgen "s3://${BGEN_S3_TEST_BUCKET}/${PUBLIC_KEY}" \
+            --acl public-read
+
+          echo "BGEN_S3_TEST_URI=s3://${BGEN_S3_TEST_BUCKET}/${KEY}" >> "$GITHUB_ENV"
+          echo "BGEN_S3_PUBLIC_TEST_URI=s3://${BGEN_S3_TEST_BUCKET}/${PUBLIC_KEY}" >> "$GITHUB_ENV"
+
+      - name: Build S3-enabled bgen and run integration tests
+        run: pixi run -e s3 --frozen test-s3

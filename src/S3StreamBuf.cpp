@@ -6,12 +6,15 @@
 #include "genfile/bgen/S3StreamBuf.hpp"
 
 #include <aws/core/Aws.h>
+#include <aws/core/auth/AWSCredentials.h>
+#include <aws/core/auth/AWSCredentialsProvider.h>
 #include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <aws/s3/S3Client.h>
 #include <aws/s3/model/GetObjectRequest.h>
 #include <aws/s3/model/HeadObjectRequest.h>
 
 #include <algorithm>
+#include <cstdlib>
 #include <sstream>
 #include <stdexcept>
 
@@ -87,8 +90,40 @@ S3StreamBuf::S3StreamBuf(
     Aws::Client::ClientConfiguration config;
     if (!region.empty()) {
         config.region = region;
+    } else {
+        // Respect AWS_DEFAULT_REGION / AWS_REGION env vars
+        const char* env_region = std::getenv("AWS_DEFAULT_REGION");
+        if (!env_region) env_region = std::getenv("AWS_REGION");
+        if (env_region && env_region[0] != '\0') {
+            config.region = env_region;
+        }
     }
-    m_impl->client = std::make_shared<Aws::S3::S3Client>(config);
+
+    // Support AWS_ENDPOINT_URL (e.g. for LocalStack or compatible services)
+    const char* endpoint_url = std::getenv("AWS_ENDPOINT_URL");
+    bool path_style = false;
+    if (endpoint_url && endpoint_url[0] != '\0') {
+        config.endpointOverride = endpoint_url;
+        path_style = true;  // custom endpoints need path-style (not virtual-hosted) addressing
+    }
+
+    // Support AWS_NO_SIGN_REQUEST=1 for public / anonymous buckets.
+    // Wrap empty AWSCredentials in a SimpleAWSCredentialsProvider (the S3Client
+    // constructor takes a CredentialsProvider, not a raw AWSCredentials object).
+    const char* no_sign = std::getenv("AWS_NO_SIGN_REQUEST");
+    if (no_sign && (std::string(no_sign) == "1" || std::string(no_sign) == "true")) {
+        auto anon_provider = std::make_shared<Aws::Auth::SimpleAWSCredentialsProvider>(
+            Aws::Auth::AWSCredentials("", ""));
+        m_impl->client = std::make_shared<Aws::S3::S3Client>(
+            anon_provider, config,
+            Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::RequestDependent,
+            !path_style);
+    } else {
+        m_impl->client = std::make_shared<Aws::S3::S3Client>(
+            config,
+            Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::RequestDependent,
+            !path_style);
+    }
 
     // HEAD request to get object size
     Aws::S3::Model::HeadObjectRequest head_request;
