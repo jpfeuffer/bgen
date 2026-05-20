@@ -86,23 +86,7 @@ jobs:
     name: S3 integration tests (MinIO)
     runs-on: ubuntu-latest
 
-    services:
-      minio:
-        image: quay.io/minio/minio:latest
-        ports:
-          - "9000:9000"
-        env:
-          MINIO_ROOT_USER: minioadmin
-          MINIO_ROOT_PASSWORD: minioadmin
-        options: >-
-          --health-cmd "curl -f http://localhost:9000/minio/health/live"
-          --health-interval 5s
-          --health-timeout 10s
-          --health-retries 20
-          --health-start-period 5s
-
     env:
-      # Point the AWS SDK (and awscli) at MinIO
       AWS_ENDPOINT_URL: http://localhost:9000
       AWS_DEFAULT_REGION: us-east-1
       AWS_ACCESS_KEY_ID: minioadmin
@@ -114,6 +98,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Start MinIO
+        run: |
+          docker run -d --name minio \
+            -p 9000:9000 \
+            -e MINIO_ROOT_USER=minioadmin \
+            -e MINIO_ROOT_PASSWORD=minioadmin \
+            quay.io/minio/minio:latest server /data
+          # Wait up to 60s for MinIO to become healthy
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:9000/minio/health/live && echo "MinIO ready" && break
+            sleep 2
+          done
 
       - name: Set up pixi
         uses: prefix-dev/setup-pixi@v0.8.3
