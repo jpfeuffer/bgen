@@ -1,6 +1,15 @@
 History
 ====
 
+20 May 2026
+----
+v1.2.0 release. Changes are:
+
+- Migrate build system from waf to CMake (requires CMake >= 3.25).
+- Add optional AWS S3 remote file support (enable with -DBGEN_WITH_S3=ON).
+- Add pixi-based packaging as the bgen-cpp conda package.
+- Modernise CI: add GitHub Actions workflows for CI and CD (release on v* tags).
+
 15 January 2020
 ----
 v1.1.5 release.  Changes are:

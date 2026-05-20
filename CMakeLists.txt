@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(bgen VERSION 1.1.7 LANGUAGES C CXX)
+project(bgen VERSION 1.2.0 LANGUAGES C CXX)
 
 # ─── Build options ───────────────────────────────────────────────────────────
 option(BGEN_BUILD_EXAMPLES "Build example programs" OFF)

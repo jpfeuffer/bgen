@@ -30,7 +30,7 @@ s3 = { features = ["s3"], solve-group = "default" }
 
 [package]
 name = "bgen-cpp"
-version = "1.1.7"
+version = "1.2.0"
 
 [package.build]
 backend = { name = "pixi-build-cmake", version = "0.*" }
